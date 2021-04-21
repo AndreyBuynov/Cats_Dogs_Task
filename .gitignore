@@ -1,3 +1,6 @@
 data/
 *.txt
 *.jpg
+.ipynb_checkpoints/
+__pycache__/
+cats_dogs.csv
