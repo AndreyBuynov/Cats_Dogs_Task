@@ -4,3 +4,4 @@ data/
 .ipynb_checkpoints/
 __pycache__/
 cats_dogs.csv
+cats_dogs_dataset.zip

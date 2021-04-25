@@ -1,4 +1,5 @@
 import torch
+from sklearn.metrics import accuracy_score
 
 def train(train_dataloader, my_model, optimizer, criterion_class, criterion_bbox, device):
     my_model.train()
