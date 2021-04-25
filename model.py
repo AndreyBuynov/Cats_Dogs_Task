@@ -19,10 +19,9 @@ class My_Cnn(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),
             nn.BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.Sequential(
-                nn.Conv2d(128, 128, kernel_size=(1, 1), stride=(2, 2), bias=False),
-                nn.BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-            )
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=(1, 1), stride=(2, 2), bias=False),
+            nn.BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
         )
         
         self.conv3 = nn.Sequential(
@@ -31,10 +30,9 @@ class My_Cnn(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),
             nn.BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.Sequential(
-                nn.Conv2d(256, 256, kernel_size=(1, 1), stride=(2, 2), bias=False),
-                nn.BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-            )
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=(1, 1), stride=(2, 2), bias=False),
+            nn.BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
         )
         
         self.conv4 = nn.Sequential(
@@ -43,17 +41,16 @@ class My_Cnn(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False),
             nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
-            nn.Sequential(
-                nn.Conv2d(512, 512, kernel_size=(1, 1), stride=(2, 2), bias=False),
-                nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-            )
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=(1, 1), stride=(2, 2), bias=False),
+            nn.BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
         )
 
         self.fc_cl = nn.Sequential(
             nn.Dropout(p=0.3, inplace=False),
             nn.Linear(in_features=512*4*4, out_features=128, bias=True),
             nn.ReLU(inplace=True),
-            nn.Linear(in_features=128, out_features=1, bias=True)
+            nn.Linear(in_features=128, out_features=n_classes, bias=True)
         )
         
         self.fc_xmin = nn.Sequential(
@@ -83,20 +80,16 @@ class My_Cnn(nn.Module):
             nn.ReLU(inplace=True),
             nn.Linear(in_features=256, out_features=1, bias=True)
         )
+        
+        self.sigmoid = nn.Sigmoid()
   
   
     def forward(self, x):
-        print('x in: ', x.shape)
         x = self.conv1(x)
-        print('x from 1 layer : ', x.shape)
         x = self.conv2(x)
-        print('x from 2 layer : ', x.shape)
         x = self.conv3(x)
-        print('x from 3 layer : ', x.shape)
         x = self.conv4(x)
-        print('x from 4 layer : ', x.shape)
         x = x.view(x.size(0), -1)
-        print('x after view : ', x.shape)
         cl = self.fc_cl(x)
         xmin = self.fc_xmin(x)
         ymin = self.fc_ymin(x)
