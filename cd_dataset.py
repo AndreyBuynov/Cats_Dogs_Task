@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import Dataset
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensor
-from albumentations.augmentations.transforms import Resize
+from albumentations.augmentations.transforms import Resize, Flip
 
 class Cats_and_Dogs(Dataset):
     def __init__(self, dataframe):
@@ -12,7 +12,7 @@ class Cats_and_Dogs(Dataset):
         self.image_ids = dataframe['idx']
         self.df = dataframe
         self.transform = A.Compose([
-                  A.Flip(0.5),
+                  Flip(0.8),
                   Resize(250, 250),
                   A.RandomBrightnessContrast(0.5),
                   ToTensor()],
