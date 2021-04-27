@@ -7,8 +7,9 @@ from albumentations.pytorch.transforms import ToTensor
 from albumentations.augmentations.transforms import Resize, Flip
 
 class Cats_and_Dogs(Dataset):
-    def __init__(self, dataframe):
+    def __init__(self, dataframe, bbox_normalize = True):
         super().__init__()
+        self.bbox_normalize = bbox_normalize
         self.image_ids = dataframe['idx']
         self.df = dataframe
         self.transform = A.Compose([
@@ -38,7 +39,10 @@ class Cats_and_Dogs(Dataset):
         sample['bboxes'] = box
         
         sample = self.transform(image = sample['image'], bboxes = sample['bboxes'])
-        target = list(x / 250 for x in sample['bboxes'][0][:4])
+        if self.bbox_normalize:
+            target = list(x / 250 for x in sample['bboxes'][0][:4])
+        else:
+            target = list(x for x in sample['bboxes'][0][:4])
         target.append(sample['bboxes'][0][-1])
         target = torch.as_tensor(target, dtype = torch.float32)
         image = sample['image'] / 255.0

@@ -63,6 +63,57 @@ def plot_img(img_path, isboxes, model = None, device = torch.device('cuda')):
         return numpy_img, labels
     
     
+def plot_img_fastrcnn(img_path, model, isboxes = None, device = torch.device('cuda')):
+    labels_dict = {
+        1 : 'cat',
+        0 : 'dog'
+    }
+
+    numpy_img = cv2.imread(img_path)[:,:,::-1]
+    numpy_img = cv2.cvtColor(numpy_img, cv2.COLOR_BGR2RGB)
+    img = torch.from_numpy(numpy_img.astype('float32')).permute(2,0,1) / 255.
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    if isboxes is not None:
+        labels = []
+        boxes = []
+        for item in isboxes:
+            labels.append(item[0]) 
+            boxes.append([item[1][0], item[1][1], item[2][0], item[2][1]])
+
+    else:
+        model = model.eval()
+        predictions = model(img[None,...].to(device))
+        preds = predictions[0]
+      
+        CONF_THRESH = 0.7
+        boxes = preds['boxes'][preds['scores'] > CONF_THRESH]
+        boxes_dict = {}
+        boxes_dict['boxes'] = boxes
+
+        labels = preds['labels'].cpu().detach().numpy()
+        scores = preds['scores'].cpu().detach().numpy()
+
+    for i, box in enumerate(boxes):
+        if labels[i] in labels_dict:
+            numpy_img = cv2.putText(numpy_img, labels_dict.get(labels[i]), (int(box[0])+5,int(box[1])-5), font, 1, (255,255,0), 2)
+        else:
+            numpy_img = cv2.putText(numpy_img, str(labels[i]), (int(box[0])+5,int(box[1])-5), font, 1, (255,255,0), 2)
+        #numpy_img = cv2.putText(numpy_img, str(round(scores[i], 2)), (int(box[0])+5,int(box[1])-45), font, 1, (255,255,0), 2)  
+        numpy_img = cv2.rectangle(
+            numpy_img, 
+            (box[0],box[1]),
+            (box[2],box[3]), 
+            255,
+            i+2
+        )
+
+    if len(boxes) > 0:
+        return numpy_img #.get()
+    else:
+        return numpy_img
+    
+    
 def show_random_pict(df, model = None, val_idx = None):
     """
     Функция выводит случайную картинку из датафрейма с обозначенным bound box

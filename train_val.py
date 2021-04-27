@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from sklearn.metrics import accuracy_score
 
@@ -59,8 +60,8 @@ def validate(valid_loader, my_model, device):
                 iou += bb_IoU(bboxes[k], bbox_pred[k])
             batch_iou += iou / len(bbox_pred)
 
-        mean_acc = cl_accuracy / i
-        mean_iou = batch_iou / i
+        mean_acc = cl_accuracy / len(valid_loader)
+        mean_iou = batch_iou / len(valid_loader)
 
     return mean_acc, mean_iou
 
@@ -80,3 +81,62 @@ def bb_IoU(true_bbox, pred_bbox):
     boxBArea = (pred_bbox[2] - pred_bbox[0] + 1) * (pred_bbox[3] - pred_bbox[1] + 1)
 
     return interArea / float(boxAArea + boxBArea - interArea)
+
+def train_frcnn(train_dataloader, model, optimizer, device):
+    model.train()
+    running_loss = []
+    for i, data in enumerate(train_dataloader):
+        optimizer.zero_grad()
+        images, targets = data[0], data[1]
+        new_targets = []
+        for item in targets:
+            temp_targets = {}            
+            temp_targets["boxes"] = item[:-1].unsqueeze(0).to(device)
+            temp_targets["labels"] = item[-1].unsqueeze(0)
+            temp_targets["labels"] = torch.as_tensor(temp_targets["labels"], dtype=torch.int64).to(device)
+            new_targets.append(temp_targets)
+
+        images = list(image.to(device) for image in images)
+
+        loss_dict = model(images, new_targets)
+
+        loss = sum(loss for loss in loss_dict.values())
+        running_loss.append(loss.item())
+        loss.backward()
+        optimizer.step()
+
+    return np.mean(running_loss)
+
+def validate_frcnn(valid_loader, model, device):
+    model.eval()
+    mean_acc = []
+    mean_iou = []
+
+    with torch.no_grad():
+        for k, (images, targets) in enumerate(valid_loader):
+            images = list(image for image in images)
+            iou = []
+            labels = []
+            pred_labels = []
+
+            for i, data_t in enumerate(targets):
+                # в батче проходим по каждой картинке
+                boxes = list(x for x in data_t[:-1].numpy())
+                labels.append(int(data_t[-1]))
+
+                predictions = model(images[i][None,...].to(device))
+                preds = predictions[0]
+
+                pred_boxes = list(x for x in preds['boxes'][:1].squeeze(0).to('cpu').numpy())
+                # некоторые предсказание бывали пустыми, поэтому сделал такую заглушку
+                if len(pred_boxes) == 0:
+                    iou.append(0)
+                    pred_labels.append(0)
+                else:
+                    iou.append(bb_IoU(boxes, pred_boxes))
+                    pred_labels.append(int(preds['labels'][:1].to('cpu')))
+
+            mean_acc.append(accuracy_score(pred_labels, labels))
+            mean_iou.append(np.mean(iou))
+
+    return round(np.mean(mean_acc), 5), round(np.mean(mean_iou), 5)
